@@ -1,4 +1,4 @@
-name: CI/CD Deployment Pipeline
+name: CI/CD Debug Pipeline
 
 on:
   push:
@@ -11,9 +11,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  debug_info:
+    name: "Debug - Show Branch Info"
+    runs-on: ubuntu-latest
+    steps:
+    - name: Show GitHub Context
+      run: |
+        echo "🔍 DEBUG INFORMATION:"
+        echo "Event: ${{ github.event_name }}"
+        echo "Ref: ${{ github.ref }}"
+        echo "Ref Name: ${{ github.ref_name }}"
+        echo "Ref Type: ${{ github.ref_type }}"
+        echo "HEAD SHA: ${{ github.sha }}"
+
   ci:
     name: "CI - Run Tests"
     runs-on: ubuntu-latest
+    needs: debug_info
     
     steps:
     - name: Checkout code
@@ -35,60 +49,33 @@ jobs:
           }
         }' > package.json
 
-    - name: Install dependencies
-      run: npm install
-
     - name: Run Tests
       run: npm test
-
-    - name: Create test artifact
-      run: |
-        mkdir -p test-results
-        echo "All tests passed at $(date)" > test-results/report.txt
-
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-artifact
-        path: test-results/
 
   deploy_qa:
     name: "Deploy to QA"
     runs-on: ubuntu-latest
     needs: ci
-    if: github.ref == 'refs/heads/dev'
-
+    if: ${{ github.ref == 'refs/heads/dev' && github.event_name == 'push' }}
+    
     steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: test-artifact
-
-    - name: Deploy to QA
+    - name: Show QA Debug Info
       run: |
-        echo "DEPLOYING TO QA ENVIRONMENT"
+        echo "✅ QA DEPLOYMENT TRIGGERED!"
         echo "Branch: ${{ github.ref }}"
-        echo "QA Deployment Successful!"
+        echo "Event: ${{ github.event_name }}"
+        echo "🎯 This should run on push to dev branch"
 
   deploy_prod:
     name: "Deploy to Production"
     runs-on: ubuntu-latest
     needs: ci
-    if: github.ref == 'refs/heads/main'
-
+    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
+    
     steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: test-artifact
-
-    - name: Deploy to Production
+    - name: Show Production Debug Info
       run: |
-        echo "DEPLOYING TO PRODUCTION!"
+        echo "✅ PRODUCTION DEPLOYMENT TRIGGERED!"
         echo "Branch: ${{ github.ref }}"
-        echo "Production Deployment Successful!"
-
-    - name: Send Notification
-      run: |
-        echo "Notification: Production deployment completed!"
-        echo "Time: $(date)"
+        echo "Event: ${{ github.event_name }}"
+        echo "🎯 This should run on push to main branch"
