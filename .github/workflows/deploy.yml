@@ -1,4 +1,4 @@
-name: Multi-Branch Deployment
+name: Multi-Branch Environment Deployment
 
 on:
   push:
