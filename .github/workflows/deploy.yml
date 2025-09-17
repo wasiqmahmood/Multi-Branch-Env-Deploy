@@ -1,4 +1,4 @@
-name: CI/CD Deployment Pipeline
+name: CI/CD Debug Pipeline
 
 on:
   push:
@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [main, dev]
 
-# ✅ EXTRA CHALLENGE 1: Concurrency group
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
@@ -56,7 +55,6 @@ jobs:
   deploy_qa:
     name: "Deploy to QA"
     runs-on: ubuntu-latest
-    # ✅ EXTRA CHALLENGE 2: Fail fast (via needs)
     needs: ci
     if: ${{ github.ref == 'refs/heads/dev' && github.event_name == 'push' }}
     
@@ -71,7 +69,6 @@ jobs:
   deploy_prod:
     name: "Deploy to Production"
     runs-on: ubuntu-latest
-    # ✅ EXTRA CHALLENGE 2: Fail fast (via needs)
     needs: ci
     if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     
@@ -82,26 +79,3 @@ jobs:
         echo "Branch: ${{ github.ref }}"
         echo "Event: ${{ github.event_name }}"
         echo "🎯 This should run on push to main branch"
-
- # ✅ ADD SLACK NOTIFICATION RIGHT HERE ▼
-    - name: Send Slack Notification
-      if: success()
-      uses: 8398a7/action-slack@v3
-      with:
-        status: ${{ job.status }}
-        channel: '#team-deployments'
-        webhook_url: ${{ https://hooks.slack.com/services/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 }}
-        fields: repo,message,commit,author,action,eventName,ref,workflow
-      env:
-        SLACK_WEBHOOK_URL: ${{ https://hooks.slack.com/services/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 }}
-
-    - name: Simulate Notification
-      if: success() && secrets.SLACK_WEBHOOK_URL == ''
-      run: |
-        echo "📢 SIMULATED SLACK NOTIFICATION"
-        echo "• Channel: #team-deployments"
-        echo "• Repository: ${{ github.repository }}"
-        echo "• Production Deployment: ✅ SUCCESS"
-        echo "• Commit: ${{ github.sha }}"
-        echo "• By: ${{ github.actor }}"
-        echo "• Time: $(date)"
