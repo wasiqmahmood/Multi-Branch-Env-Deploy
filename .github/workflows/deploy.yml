@@ -1,4 +1,4 @@
-name: CI/CD Debug Pipeline
+name: CI/CD Deployment Pipeline
 
 on:
   push:
@@ -6,6 +6,7 @@ on:
   pull_request:
     branches: [main, dev]
 
+# ✅ EXTRA CHALLENGE 1: Concurrency group
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
@@ -55,6 +56,7 @@ jobs:
   deploy_qa:
     name: "Deploy to QA"
     runs-on: ubuntu-latest
+    # ✅ EXTRA CHALLENGE 2: Fail fast (via needs)
     needs: ci
     if: ${{ github.ref == 'refs/heads/dev' && github.event_name == 'push' }}
     
@@ -69,6 +71,7 @@ jobs:
   deploy_prod:
     name: "Deploy to Production"
     runs-on: ubuntu-latest
+    # ✅ EXTRA CHALLENGE 2: Fail fast (via needs)
     needs: ci
     if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
     
@@ -79,3 +82,27 @@ jobs:
         echo "Branch: ${{ github.ref }}"
         echo "Event: ${{ github.event_name }}"
         echo "🎯 This should run on push to main branch"
+
+    # ✅ EXTRA CHALLENGE 3: Notification step (SIMULATED)
+    - name: Send Deployment Notification
+      if: success()
+      run: |
+        echo "📢 DEPLOYMENT NOTIFICATION"
+        echo "=========================="
+        echo "Status: ✅ SUCCESS"
+        echo "Environment: 🎯 PRODUCTION"
+        echo "Repository: ${{ github.repository }}"
+        echo "Branch: ${{ github.ref }}"
+        echo "Commit: ${{ github.sha }}"
+        echo "Timestamp: $(date)"
+        echo "Triggered by: ${{ github.actor }}"
+        echo ""
+        echo "This would send to:"
+        echo "• Slack: #team-deployments"
+        echo "• Microsoft Teams: Deployment Channel"
+        echo "• Email: devops-team@company.com"
+        echo ""
+        echo "📋 Deployment Summary:"
+        echo "All tests passed successfully"
+        echo "Production deployment completed"
+        echo "System is live and operational"
