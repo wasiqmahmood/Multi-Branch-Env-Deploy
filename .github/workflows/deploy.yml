@@ -79,3 +79,34 @@ jobs:
         echo "Branch: ${{ github.ref }}"
         echo "Event: ${{ github.event_name }}"
         echo "🎯 This should run on push to main branch"
+
+
+    # ✅ REAL Slack Notification (Extra Challenge 3)
+    - name: Send Slack Notification
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#team-deployments'
+        # Example URL format: https://hooks.slack.com/services/TXXXXXXXXX/BXXXXXXXXX/XXXXXXXXXXXXXXXXXXXXXXXX
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      env:
+        # Example: https://hooks.slack.com/services/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
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+    # ✅ Fallback simulation (if no webhook configured)
+    - name: Simulate Notification
+      if: success() && secrets.SLACK_WEBHOOK_URL == ''
+      run: |
+        echo "📢 SIMULATED SLACK NOTIFICATION"
+        echo "• Channel: #team-deployments"
+        echo "• Repository: ${{ github.repository }}"
+        echo "• Production Deployment: ✅ SUCCESS"
+        echo "• Commit: ${{ github.sha }}"
+        echo "• By: ${{ github.actor }}"
+        echo "• Time: $(date)"
+        echo ""
+        echo "🔧 To setup real Slack notifications:"
+        echo "Webhook URL format: https://hooks.slack.com/services/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"
+        echo "Add this URL to GitHub Secrets → SLACK_WEBHOOK_URL"
