@@ -90,10 +90,10 @@ jobs:
       with:
         status: ${{ job.status }}
         channel: '#team-deployments'
-        webhook_url: ${{ curl -X POST -H 'Content-type: application/json' --data '{"text":"Lint, Test!"}' YOUR_WEBHOOK_URL_HERE }}
+        webhook_url: ${{ https://hooks.slack.com/services/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 }}
         fields: repo,message,commit,author,action,eventName,ref,workflow
       env:
-        SLACK_WEBHOOK_URL: ${{ curl -X POST -H 'Content-type: application/json' --data '{"text":"Lint, Test"}' YOUR_WEBHOOK_URL_HERE }}
+        SLACK_WEBHOOK_URL: ${{ https://hooks.slack.com/services/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 }}
 
     - name: Simulate Notification
       if: success() && secrets.SLACK_WEBHOOK_URL == ''
