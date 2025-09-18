@@ -1,4 +1,4 @@
-name: CI/CD Debug Pipeline
+name: CI/CD Deployment Pipeline
 
 on:
   push:
@@ -6,28 +6,15 @@ on:
   pull_request:
     branches: [main, dev]
 
+# ✅ Extra Challenge 1: Concurrency group
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  debug_info:
-    name: "Debug - Show Branch Info"
-    runs-on: ubuntu-latest
-    steps:
-    - name: Show GitHub Context
-      run: |
-        echo "🔍 DEBUG INFORMATION:"
-        echo "Event: ${{ github.event_name }}"
-        echo "Ref: ${{ github.ref }}"
-        echo "Ref Name: ${{ github.ref_name }}"
-        echo "Ref Type: ${{ github.ref_type }}"
-        echo "HEAD SHA: ${{ github.sha }}"
-
   ci:
-    name: "CI - Run Tests"
+    name: "CI (Lint + Test)"
     runs-on: ubuntu-latest
-    needs: debug_info
     
     steps:
     - name: Checkout code
@@ -41,7 +28,7 @@ jobs:
     - name: Create package.json
       run: |
         echo '{
-          "name": "ci-cd-demo",
+          "name": "multi-branch-env-deploy",
           "version": "1.0.0",
           "scripts": {
             "test": "echo \"Tests passed!\" && exit 0",
@@ -49,35 +36,83 @@ jobs:
           }
         }' > package.json
 
+    - name: Install dependencies
+      run: npm install
+
     - name: Run Tests
       run: npm test
+
+    - name: Create test report
+      run: |
+        mkdir -p test-results
+        echo "Tests completed at $(date)" > test-results/report.txt
+        echo "Status: ✅ SUCCESS" >> test-results/report.txt
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-report
+        path: test-results/
 
   deploy_qa:
     name: "Deploy to QA"
     runs-on: ubuntu-latest
+    # ✅ Extra Challenge 2: Fail fast
     needs: ci
-    if: ${{ github.ref == 'refs/heads/dev' && github.event_name == 'push' }}
-    
+    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+
     steps:
-    - name: Show QA Debug Info
+    - name: Download test results
+      uses: actions/download-artifact@v4
+      with:
+        name: test-report
+
+    - name: Deploy to QA Environment
       run: |
-        echo "✅ QA DEPLOYMENT TRIGGERED!"
-        echo "Branch: ${{ github.ref }}"
-        echo "Event: ${{ github.event_name }}"
-        echo "🎯 This should run on push to dev branch"
+        echo "🚀 DEPLOYING TO QA ENVIRONMENT"
+        echo "Test results:"
+        cat test-results/report.txt
+        echo "✅ QA Deployment Completed Successfully!"
 
   deploy_prod:
     name: "Deploy to Production"
     runs-on: ubuntu-latest
+    # ✅ Extra Challenge 2: Fail fast
     needs: ci
-    if: ${{ github.ref == 'refs/heads/main' && github.event_name == 'push' }}
-    
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
     steps:
-    - name: Show Production Debug Info
+    - name: Download test results
+      uses: actions/download-artifact@v4
+      with:
+        name: test-report
+
+    - name: Deploy to Production
       run: |
-        echo "✅ PRODUCTION DEPLOYMENT TRIGGERED!"
-        echo "Branch: ${{ github.ref }}"
-        echo "Event: ${{ github.event_name }}"
-        echo "🎯 This should run on push to main branch"
+        echo "🎉 DEPLOYING TO PRODUCTION ENVIRONMENT!"
+        echo "Test results:"
+        cat test-results/report.txt
+        echo "✅ Production Deployment Completed Successfully!"
 
+    # ✅ Extra Challenge 3: Slack Notification
+    - name: Send Slack Notification
+      if: success()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: ${{ job.status }}
+        channel: '#team-deployments'
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        fields: repo,message,commit,author,action,eventName,ref,workflow
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
+    # Fallback if webhook not configured
+    - name: Simulate Notification
+      if: success() && secrets.SLACK_WEBHOOK_URL == ''
+      run: |
+        echo "📢 SLACK NOTIFICATION (Simulated)"
+        echo "Webhook URL: ${{ secrets.SLACK_WEBHOOK_URL }}"
+        echo "Channel: #team-deployments"
+        echo "Message: Production deployment completed successfully! ✅"
+        echo "Repository: ${{ github.repository }}"
+        echo "By: ${{ github.actor }}"
