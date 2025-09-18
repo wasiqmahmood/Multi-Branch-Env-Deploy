@@ -89,3 +89,4 @@ jobs:
         status: ${{ job.status }}
         channel: '#team-deployments'
         webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}  
+        fields: repo,message,commit,author,action,eventName,ref,workflow
