@@ -6,7 +6,6 @@ on:
   pull_request:
     branches: [main, dev]
 
-# ✅ Extra Challenge 1: Concurrency group
 concurrency:
   group: deploy-${{ github.ref }}
   cancel-in-progress: true
@@ -42,74 +41,51 @@ jobs:
     - name: Run Tests
       run: npm test
 
-    - name: Create test report
-      run: |
-        mkdir -p test-results
-        echo "Tests completed at $(date)" > test-results/report.txt
-        echo "Status: ✅ SUCCESS" >> test-results/report.txt
-
-    - name: Upload test results
+    - name: Upload test artifact
       uses: actions/upload-artifact@v4
       with:
-        name: test-report
-        path: test-results/
+        name: test-results
+        path: .
 
   deploy_qa:
     name: "Deploy to QA"
     runs-on: ubuntu-latest
     needs: ci
-    if: github.ref == 'refs/heads/dev' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/dev'
 
     steps:
-    - name: Download test results
+    - name: Download artifact
       uses: actions/download-artifact@v4
       with:
-        name: test-report
+        name: test-results
 
-    - name: Deploy to QA Environment
+    - name: Deploy to QA
       run: |
         echo "🚀 DEPLOYING TO QA ENVIRONMENT"
-        echo "Test results:"
-        cat test-results/report.txt
-        echo "✅ QA Deployment Completed Successfully!"
+        echo "✅ QA Deployment Successful!"
 
   deploy_prod:
     name: "Deploy to Production"
     runs-on: ubuntu-latest
     needs: ci
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Download test results
+    - name: Download artifact
       uses: actions/download-artifact@v4
       with:
-        name: test-report
+        name: test-results
 
     - name: Deploy to Production
       run: |
         echo "🎉 DEPLOYING TO PRODUCTION!"
-        echo "✅ Production Deployment completed successfully!"
+        echo "✅ Production Deployment Successful!"
 
-    # ✅ Slack Notification
+    # ✅ Slack Notification 
     - name: Send Slack Notification
       if: success()
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
         channel: '#team-deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
-        fields: repo,message,commit,author,action,eventName,ref,workflow
-      env:
-        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-
-    # ✅ FIXED: Fallback if no webhook configured
-    - name: Simulate Notification
-      if: success() && secrets.SLACK_WEBHOOK_URL == 'https://hooks.slack.com/services/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'  
-      run: |
-        echo "📢 SIMULATED SLACK NOTIFICATION"
-        echo "• Channel: #team-deployments"
-        echo "• Repository: ${{ github.repository }}"
-        echo "• Production Deployment: ✅ SUCCESS"
-        echo "• Commit: ${{ github.sha }}"
-        echo "• By: ${{ github.actor }}"
-        echo "• Time: $(date)"
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}  
