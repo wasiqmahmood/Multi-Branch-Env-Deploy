@@ -27,7 +27,7 @@ jobs:
     - name: Create package.json
       run: |
         echo '{
-          "name": "multi-branch-env-deploy",
+          "name": "ci-cd-demo",
           "version": "1.0.0",
           "scripts": {
             "test": "echo \"Tests passed!\" && exit 0",
@@ -35,17 +35,8 @@ jobs:
           }
         }' > package.json
 
-    - name: Install dependencies
-      run: npm install
-
     - name: Run Tests
       run: npm test
-
-    - name: Upload test artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: test-results
-        path: .
 
   deploy_qa:
     name: "Deploy to QA"
@@ -54,15 +45,8 @@ jobs:
     if: github.ref == 'refs/heads/dev'
 
     steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: test-results
-
     - name: Deploy to QA
-      run: |
-        echo "🚀 DEPLOYING TO QA ENVIRONMENT"
-        echo "✅ QA Deployment Successful!"
+      run: echo "🚀 QA Deployment Successful!"
 
   deploy_prod:
     name: "Deploy to Production"
@@ -71,22 +55,14 @@ jobs:
     if: github.ref == 'refs/heads/main'
 
     steps:
-    - name: Download artifact
-      uses: actions/download-artifact@v4
-      with:
-        name: test-results
-
     - name: Deploy to Production
-      run: |
-        echo "🎉 DEPLOYING TO PRODUCTION!"
-        echo "✅ Production Deployment Successful!"
+      run: echo "🎉 Production Deployment Successful!"
 
-    # ✅ Slack Notification 
+    # ✅ SIMPLE Slack Notification
     - name: Send Slack Notification
       if: success()
       uses: 8398a7/action-slack@v3
       with:
         status: ${{ job.status }}
         channel: '#team-deployments'
-        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}  
-        fields: repo,message,commit,author,action,eventName,ref,workflow
+        webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
