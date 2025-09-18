@@ -104,7 +104,7 @@ jobs:
 
     # ✅ FIXED: Fallback if no webhook configured
     - name: Simulate Notification
-      if: success() && secrets.SLACK_WEBHOOK_URL == ''  # ← FIXED: secrets.SLACK_WEBHOOK_URL
+      if: success() && secrets.SLACK_WEBHOOK_URL == 'https://hooks.slack.com/services/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'  
       run: |
         echo "📢 SIMULATED SLACK NOTIFICATION"
         echo "• Channel: #team-deployments"
